@@ -2,6 +2,9 @@ from __future__ import annotations
 from typing import Iterable
 from numbers import Number
 from collections import namedtuple
+from itertools import combinations
+from numpy import matrix
+from numpy import any as npany
 
 
 class Vector(tuple):
@@ -27,15 +30,36 @@ class PLF(tuple):
         # TODO: validation
         return super().__new__(self, args)
 
-    def __call__(self, *args: Iterable[Number]) -> Iterable[Number]:
+    def __call__(self, *args: Iterable[Number], error: Number = 0) -> Iterable[Number]:
         # TODO: validation
-        # TODO: impl
 
-        # for all combinations of edges find:
-        # 1. len = len(args) + 1
-        # 2. inner
+        dim = len(args)
+        np = dim + 1
+        ne = dim*np//2
+        for pack in combinations(self, ne):
+            points = set()
+            for edge in pack:
+                points.add(edge.s)
+                points.add(edge.t)
+            if len(points) != np:
+                continue
 
-        # solve the equation \sum cx + c = 0
+            points = [point for point in points]
 
-        # calculate result
-        return Vector()
+            r = [arg for arg in args] + [1]
+            r = matrix(r).T
+            R = [[point.x[i] for point in points]
+                 for i in range(len(args))] + [[1] * np]
+            Ry = [point.y for point in points]
+            Ry = matrix(Ry)
+            Ry = Ry.T
+            R = matrix(R)
+            l = R.I * r
+            if npany(l > 1+1e-10):
+                continue
+            if npany(l < -1e-10):
+                continue
+            ry = Ry * l
+            return Vector(*ry.T.tolist()[0])
+
+        raise AssertionError
